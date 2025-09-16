@@ -2,7 +2,13 @@ import React from "react";
 import SkeletonItem from "../atoms/SkeletonItem";
 import SearchResultItem from "../molecules/SearchResultItem";
 
-const SearchResultsList = ({ isLoading, results, isClearing, searchTerm }) => {
+const SearchResultsList = ({
+  isLoading,
+  results,
+  isClearing,
+  searchTerm,
+  shrinkDelay,
+}) => {
   if (isLoading) {
     return (
       <div>
@@ -20,7 +26,10 @@ const SearchResultsList = ({ isLoading, results, isClearing, searchTerm }) => {
   }
 
   return (
-    <div className={isClearing ? "list-is-clearing" : ""}>
+    <div
+      className={isClearing ? "list-is-clearing" : ""}
+      style={{ "--shrink-delay": `${shrinkDelay}ms` }}
+    >
       {results.map((item, index) => (
         <div
           key={item.id}
