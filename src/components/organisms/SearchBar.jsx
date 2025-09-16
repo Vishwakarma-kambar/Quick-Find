@@ -29,14 +29,11 @@ const SearchBar = () => {
   });
   const [activeTab, setActiveTab] = useState("all");
 
-  // --- Custom Hooks for Advanced Functionality ---
   useOnClickOutside(dropdownRef, () => setIsSettingsOpen(false), triggerRef);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Effect to handle the global 's' key press for quick access
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // Don't trigger if the user is already typing in an input, textarea, etc.
       const isTyping =
         event.target.tagName === "INPUT" ||
         event.target.tagName === "TEXTAREA" ||
@@ -53,9 +50,8 @@ const SearchBar = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []); // The empty array ensures this effect runs only once
+  }, []);
 
-  // --- Core Logic Functions (defined inside the component scope) ---
   const performSearch = useCallback(async (term) => {
     const masterSearchFilters = {
       files: true,
@@ -73,37 +69,6 @@ const SearchBar = () => {
     }
   }, []);
 
-  const handleClear = useCallback(() => {
-    if (!searchTerm) return;
-    const staggerDelay = 100;
-    const baseAnimationDuration = 300;
-    const totalDuration =
-      baseAnimationDuration + (searchResults.length - 1) * staggerDelay;
-    setIsClearing(true);
-    setTimeout(() => {
-      setSearchResults([]);
-      setSearchTerm("");
-      setIsClearing(false);
-    }, totalDuration);
-  }, [searchTerm, searchResults.length]);
-
-  const handleFilterToggle = useCallback((filterKey) => {
-    setFilters((prev) => ({ ...prev, [filterKey]: !prev[filterKey] }));
-  }, []);
-
-  useEffect(() => {
-    performSearch(debouncedSearchTerm);
-  }, [debouncedSearchTerm, performSearch]);
-
-  // --- Data Derivation for Rendering (Calculated on every render) ---
-  const counts = {
-    all: searchResults.length,
-    files: searchResults.filter((r) => r.type === "file").length,
-    people: searchResults.filter((r) => r.type === "person").length,
-    chats: searchResults.filter((r) => r.type === "chat").length,
-    lists: searchResults.filter((r) => r.type === "list").length,
-  };
-
   const displayedResults = (() => {
     if (activeTab === "all") {
       return searchResults;
@@ -117,6 +82,48 @@ const SearchBar = () => {
     const typeToFilter = tabTypeMapping[activeTab];
     return searchResults.filter((item) => item.type === typeToFilter);
   })();
+
+  const handleClear = useCallback(() => {
+    if (!searchTerm || displayedResults.length === 0) return;
+
+    const staggerDelayMs = 200;
+    const baseItemAnimationMs = 300;
+    const shrinkContainerMs = 100;
+
+    const lastItemDelay = (displayedResults.length - 1) * staggerDelayMs;
+    const totalItemAnimationTime = baseItemAnimationMs + lastItemDelay;
+
+    const totalDuration = totalItemAnimationTime + shrinkContainerMs;
+
+    setIsClearing(true);
+    setTimeout(() => {
+      setSearchResults([]);
+      setSearchTerm("");
+      setIsClearing(false);
+    }, totalDuration);
+  }, [searchTerm, displayedResults.length]);
+
+  const handleFilterToggle = useCallback((filterKey) => {
+    setFilters((prev) => ({ ...prev, [filterKey]: !prev[filterKey] }));
+  }, []);
+
+  useEffect(() => {
+    performSearch(debouncedSearchTerm);
+  }, [debouncedSearchTerm, performSearch]);
+
+  const counts = {
+    all: searchResults.length,
+    files: searchResults.filter((r) => r.type === "file").length,
+    people: searchResults.filter((r) => r.type === "person").length,
+    chats: searchResults.filter((r) => r.type === "chat").length,
+    lists: searchResults.filter((r) => r.type === "list").length,
+  };
+
+  const staggerDelayMs = 80;
+  const shrinkDelay = Math.max(
+    0,
+    (displayedResults.length - 1) * staggerDelayMs
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto my-10 bg-white rounded-lg shadow-lg border border-gray-200 relative">
@@ -134,8 +141,9 @@ const SearchBar = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-3 pr-4 text-lg bg-transparent focus:outline-none"
+            disabled={isLoading}
           />
-          {searchTerm && (
+          {searchTerm && !isLoading && (
             <button
               onClick={handleClear}
               className="text-sm font-semibold text-gray-600 hover:text-gray-900 cursor-pointer underline"
@@ -143,7 +151,7 @@ const SearchBar = () => {
               Clear
             </button>
           )}
-          {!searchTerm && (
+          {!searchTerm && !isLoading && (
             <div className="flex items-center space-x-2">
               <div className="text-s p-1 h-6 w-6 flex items-center justify-center font-semibold text-gray-500 border border-gray-300 rounded-md bg-gray-50">
                 s
@@ -185,12 +193,14 @@ const SearchBar = () => {
             </button>
           </div>
 
-          <div className="mt-2 relative max-h-96 overflow-y-auto">
+          <div className="mt-2 relative max-h-100 overflow-y-auto">
             <SearchResultsList
               isLoading={isLoading}
               results={displayedResults}
               isClearing={isClearing}
               searchTerm={debouncedSearchTerm}
+              // --- CHANGE #3: PASSING THE NEW PROP ---
+              shrinkDelay={shrinkDelay}
             />
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import AnimatedCount from "../atoms/AnimatedCount";
 
 const CategoryTabs = ({ counts, activeTab, onTabClick, filters }) => {
   const getCount = (type) => counts[type] || 0;
@@ -30,9 +31,7 @@ const CategoryTabs = ({ counts, activeTab, onTabClick, filters }) => {
           }`}
         >
           <span>{tab.label}</span>
-          <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">
-            {tab.count}
-          </span>
+          <AnimatedCount finalCount={tab.count} />
         </button>
       ))}
     </div>
